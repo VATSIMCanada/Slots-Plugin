@@ -10,7 +10,7 @@ VATUSA version
 #include "vatsimAPI.h"
 
 map<string, ACData> CSiTRadar::mAcData;
-map<string, string> CSiTRadar::slotTime;
+map<int, string> CSiTRadar::slotTime;
 bool CSiTRadar::canAmend;
 int CSiTRadar::refreshStatus;
 int CSiTRadar::amendStatus;
@@ -83,6 +83,18 @@ void CSiTRadar::OnRefresh(HDC hdc, int phase)
 		menu.x = 80;
 		but = TopMenu::DrawButton(&dc, menu, 60, 23, CSiTRadar::eventCode.c_str(), 0);
 		ButtonToScreen(this, but, "Settings", BUTTON_MENU_SETTINGS);
+		// if correct event code, draw a green square:
+
+		if (canAmend) {
+
+			COLORREF targetPenColor = RGB(0, 150, 50);
+			HPEN targetPen = CreatePen(PS_SOLID, 2, targetPenColor);
+			dc.SelectObject(targetPen);
+			dc.SelectStockObject(NULL_BRUSH);
+			dc.Rectangle(&but);
+			DeleteObject(targetPen);
+		}
+
 		
 	}
 

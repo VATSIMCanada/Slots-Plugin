@@ -71,6 +71,12 @@ void CDataHandler::GetVatsimAPIData(void* args) {
 		// Now we parse the json
 		cidJson = json::parse(cidString);
 
+		if (cidJson.find("error") != cidJson.end()) {
+			string error = cidJson.at("error");
+			data->Plugin->DisplayUserMessage("VATCAN Slot Manager", "Event Eror", error.c_str(), true, true, true, true, true);
+
+			return;
+		}
 		// Everything succeeded, show to user
 
 		data->Plugin->DisplayUserMessage("VATCAN Slot Manager", "Update Successful", string("Slot times parsed").c_str(), true, false, false, false, false);
@@ -99,19 +105,19 @@ void CDataHandler::GetVatsimAPIData(void* args) {
 
 		// Now we parse the json
 		auto jsonArray = json::parse(responseString);
-		if (!cidJson["pilots"].empty()) {
-			for (auto& pilots : cidJson["pilots"]) {
-				string cid = to_string(pilots["cid"]);
+		if (!cidJson.empty()) {
+			for (auto& pilots : cidJson) {
+				int cid = pilots["cid"];
 				string slot = pilots["slot"];
 
 				CSiTRadar::slotTime[cid] = slot;
 			}
 		}
 
-		if (!jsonArray["clients"].empty()) {
-			for (auto& array : jsonArray["clients"]) {
+		if (!jsonArray["pilots"].empty()) {
+			for (auto& array : jsonArray["pilots"]) {
 				string apiCallsign = array["callsign"];
-				string apiCID = array["cid"];
+				int apiCID = array["cid"];
 
 				CSiTRadar::mAcData[apiCallsign].CID = apiCID;
 

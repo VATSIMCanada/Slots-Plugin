@@ -32,7 +32,7 @@ public:
     virtual ~CSiTRadar(void);
 
     static map<string, ACData> mAcData; 
-    static map<string, string> slotTime;
+    static map<int, string> slotTime;
     static string eventCode;
 
     inline virtual void OnFlightPlanDisconnect(CFlightPlan FlightPlan);
