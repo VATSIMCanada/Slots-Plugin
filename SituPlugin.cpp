@@ -7,13 +7,13 @@ const int TAG_ITEM_CTP_CTOT = 5001;
 
 SituPlugin::SituPlugin()
 	: EuroScopePlugIn::CPlugIn(EuroScopePlugIn::COMPATIBILITY_CODE,
-		"VATCANSitu",
-		"0.3.0.3RC-CTP-minimal",
+		"VATCAN Slot Manager",
+		"0.4.0",
 		"Ron Yan",
 		"Attribution-NonCommercial 4.0 International (CC BY-NC 4.0)")
 {
-    RegisterTagItemType("CTP Slot", TAG_ITEM_CTP_SLOT);
-    RegisterTagItemType("CTP CTOT", TAG_ITEM_CTP_CTOT);
+    RegisterTagItemType("Slot", TAG_ITEM_CTP_SLOT);
+    RegisterTagItemType("CTOT", TAG_ITEM_CTP_CTOT);
 }
 
 SituPlugin::~SituPlugin()
@@ -36,7 +36,10 @@ void SituPlugin::OnGetTagItem(EuroScopePlugIn::CFlightPlan FlightPlan,
 
     if (ItemCode == TAG_ITEM_CTP_SLOT) {
         if (CSiTRadar::mAcData[FlightPlan.GetCallsign()].hasCTP) {
-            strcpy_s(sItemString, 16,"C");
+            strcpy_s(sItemString, 16,"X");
+        }
+        else {
+            strcpy_s(sItemString, 16, "");
         }
     }
     if (ItemCode == TAG_ITEM_CTP_CTOT) {

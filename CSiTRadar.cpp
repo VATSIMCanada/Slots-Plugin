@@ -1,5 +1,6 @@
 /*	
-2020 CTP Plugin-minimal version
+2020 CTP Plugin-minimal version 
+VATUSA version
 */
 
 #include "pch.h"
@@ -10,15 +11,24 @@
 
 map<string, ACData> CSiTRadar::mAcData;
 map<string, string> CSiTRadar::slotTime;
+bool CSiTRadar::canAmend;
+int CSiTRadar::refreshStatus;
+int CSiTRadar::amendStatus;
+string CSiTRadar::eventCode;
 
 CSiTRadar::CSiTRadar()
-{
+{	
+	CSiTRadar::eventCode = "Enter Code";
+	CDataHandler::GetVatsimAPIData();
+
 	time = clock();
 	oldTime = clock();
 }
 
 void CSiTRadar::OnRefresh(HDC hdc, int phase)
 {
+
+
 	if (phase != REFRESH_PHASE_AFTER_TAGS && phase != REFRESH_PHASE_BEFORE_TAGS) {
 		return;
 	}
@@ -36,7 +46,7 @@ void CSiTRadar::OnRefresh(HDC hdc, int phase)
 			string callSign = radarTarget.GetCallsign();
 
 			if (radarTarget.GetPosition().GetRadarFlags() != 0) {
-				// CTP VERSION
+
 				if (mAcData[callSign].hasCTP) {
 					CFont font;
 					LOGFONT lgfont;
@@ -53,13 +63,11 @@ void CSiTRadar::OnRefresh(HDC hdc, int phase)
 					rectPAM.left = p.x - 9;
 					rectPAM.right = p.x + 75; rectPAM.top = p.y + 8;	rectPAM.bottom = p.y + 30;
 
-					dc.DrawText("CTP", &rectPAM, DT_LEFT);
+					dc.DrawText(CDataHandler::tagLabel.c_str(), &rectPAM, DT_LEFT);
 
 					DeleteObject(font);
 				}
 			}
-
-			// END CTP
 		}
 
 		POINT menu;
@@ -69,19 +77,25 @@ void CSiTRadar::OnRefresh(HDC hdc, int phase)
 		menu.x = 10;
 
 		but = TopMenu::DrawButton(&dc, menu, 60, 23, "Refresh", autoRefresh);
-		ButtonToScreen(this, but, "Alt Filt Opts", BUTTON_MENU_RELOCATE);
+		ButtonToScreen(this, but, "Refresh Slot Data", BUTTON_MENU_REFRESH);
+
+		
+		menu.x = 80;
+		but = TopMenu::DrawButton(&dc, menu, 60, 23, CSiTRadar::eventCode.c_str(), 0);
+		ButtonToScreen(this, but, "Settings", BUTTON_MENU_SETTINGS);
+		
 	}
 
 	if (autoRefresh) {
 		time = clock();
-		if ((time - oldTime) / CLOCKS_PER_SEC > 300) {
+		if ((time - oldTime) / CLOCKS_PER_SEC > CDataHandler::refreshInterval) {
+			
 			CAsync* data = new CAsync();
 			data->Plugin = GetPlugIn();
 			_beginthread(CDataHandler::GetVatsimAPIData, 0, (void*) data);
 			oldTime = clock();
 		}
 	}
-
 	dc.Detach();
 }
 
@@ -91,16 +105,23 @@ void CSiTRadar::OnClickScreenObject(int ObjectType,
 	RECT Area,
 	int Button)
 {
-	if (ObjectType == BUTTON_MENU_RELOCATE) {
+	if (ObjectType == BUTTON_MENU_REFRESH) {
 		if (Button == BUTTON_LEFT) { 
 			
+			CSiTRadar::canAmend = FALSE;
+
 			CAsync* data = new CAsync();
 			data->Plugin = GetPlugIn();
 			_beginthread(CDataHandler::GetVatsimAPIData, 0, (void*) data);
-			
-			
+				
 			oldTime = clock(); }
 		if (Button == BUTTON_RIGHT) { autoRefresh = !autoRefresh; }
+	}
+
+	if (ObjectType == BUTTON_MENU_SETTINGS) {
+		if (Button == BUTTON_LEFT) {
+			GetPlugIn()->OpenPopupEdit(Area, FUNCTION_SET_URL, CSiTRadar::eventCode.c_str());
+		}
 	}
 }
 
@@ -112,7 +133,18 @@ void CSiTRadar::OnFlightPlanDisconnect(CFlightPlan FlightPlan) {
 	string callSign = FlightPlan.GetCallsign();
 
 	mAcData.erase(callSign);
+}
 
+void CSiTRadar::OnFunctionCall(int FunctionId,
+	const char* sItemString,
+	POINT Pt,
+	RECT Area) {
+	if (FunctionId == FUNCTION_SET_URL) {
+		try {
+			CSiTRadar::eventCode = sItemString;
+		}
+		catch (...) {}
+	}
 }
 
 CSiTRadar::~CSiTRadar()
