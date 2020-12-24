@@ -73,7 +73,7 @@ void CDataHandler::GetVatsimAPIData(void* args) {
 
 		if (cidJson.find("error") != cidJson.end()) {
 			string error = cidJson.at("error");
-			data->Plugin->DisplayUserMessage("VATCAN Slot Manager", "Event Eror", error.c_str(), true, true, true, true, true);
+			data->Plugin->DisplayUserMessage("VATCAN Slot Manager", "Error", error.c_str(), true, true, true, true, true);
 
 			CSiTRadar::amendStatus = 2;
 
