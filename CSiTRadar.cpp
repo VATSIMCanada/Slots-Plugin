@@ -16,6 +16,7 @@ int CSiTRadar::refreshStatus;
 int CSiTRadar::amendStatus;
 string CSiTRadar::eventCode;
 POINT CSiTRadar::menu{ 10, 40 };
+int CSiTRadar::tagLocation{ 2 };
 
 CSiTRadar::CSiTRadar()
 {	
@@ -63,8 +64,28 @@ void CSiTRadar::OnRefresh(HDC hdc, int phase)
 					dc.SetTextColor(RGB(255,132,0));
 
 					RECT rectPAM;
-					rectPAM.left = p.x - 9;
-					rectPAM.right = p.x + 75; rectPAM.top = p.y + 8;	rectPAM.bottom = p.y + 30;
+					
+					// Toggle between location of tag, right, bottom or left
+					switch (tagLocation) {
+					case 0:
+						continue;
+					case 1:
+						rectPAM.left = p.x + 10;
+						rectPAM.right = p.x + 90; rectPAM.top = p.y - 6;	rectPAM.bottom = p.y + 30;
+						break;
+					case 2:
+						rectPAM.left = p.x - 9;
+						rectPAM.right = p.x + 75; rectPAM.top = p.y + 8;	rectPAM.bottom = p.y + 30;
+						break;
+					case 3:
+						rectPAM.left = p.x - 30;
+						rectPAM.right = p.x + 60; rectPAM.top = p.y - 6;	rectPAM.bottom = p.y + 30;
+						break;
+					case 4:
+						rectPAM.left = p.x - 9;
+						rectPAM.right = p.x + 60; rectPAM.top = p.y - 18;	rectPAM.bottom = p.y + 30;
+						break;
+					}
 
 					dc.DrawText(CDataHandler::tagLabel.c_str(), &rectPAM, DT_LEFT);
 
@@ -98,6 +119,13 @@ void CSiTRadar::OnRefresh(HDC hdc, int phase)
 			dc.SelectObject(targetPen);
 			dc.SelectStockObject(NULL_BRUSH);
 			dc.Rectangle(&but);
+
+			// Indicator to show tag is hidden
+			if (tagLocation == 0) {
+				dc.MoveTo(but.right - 5, but.top + 3);
+				dc.LineTo(but.right - 5, but.top + 5);
+			}
+
 			DeleteObject(targetPen);		
 	}
 
@@ -139,7 +167,9 @@ void CSiTRadar::OnClickScreenObject(int ObjectType,
 		}
 
 		if (Button == BUTTON_RIGHT) {
-
+			// toggle between tag locations
+			if (tagLocation < 4) { tagLocation++; }
+			else { tagLocation = 0; }
 		}
 	}
 }

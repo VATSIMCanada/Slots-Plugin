@@ -28,6 +28,7 @@ public:
     static int refreshStatus;
     static int amendStatus;
     static POINT menu;
+    static int tagLocation;
 
     CSiTRadar(void);
     virtual ~CSiTRadar(void);
