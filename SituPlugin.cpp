@@ -7,8 +7,8 @@ const int TAG_ITEM_CTP_CTOT = 5001;
 
 SituPlugin::SituPlugin()
 	: EuroScopePlugIn::CPlugIn(EuroScopePlugIn::COMPATIBILITY_CODE,
-		"VATCAN Slot Manager",
-		"0.4.0",
+		"VATCAN Bookings",
+		"1.0.0RC",
 		"Ron Yan",
 		"Attribution-NonCommercial 4.0 International (CC BY-NC 4.0)")
 {
