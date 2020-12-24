@@ -27,6 +27,7 @@ public:
     static bool canAmend;
     static int refreshStatus;
     static int amendStatus;
+    static POINT menu;
 
     CSiTRadar(void);
     virtual ~CSiTRadar(void);
@@ -56,7 +57,11 @@ public:
         delete this;
     };
 
-
+    void CSiTRadar::OnMoveScreenObject(int ObjectType,
+        const char* sObjectId,
+        POINT Pt,
+        RECT Area,
+        bool Released);
 
 protected:
     void ButtonToScreen(CSiTRadar* radscr, RECT rect, string btext, int itemtype);

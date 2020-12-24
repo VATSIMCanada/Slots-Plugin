@@ -15,6 +15,7 @@ bool CSiTRadar::canAmend;
 int CSiTRadar::refreshStatus;
 int CSiTRadar::amendStatus;
 string CSiTRadar::eventCode;
+POINT CSiTRadar::menu{ 10, 40 };
 
 CSiTRadar::CSiTRadar()
 {	
@@ -72,18 +73,15 @@ void CSiTRadar::OnRefresh(HDC hdc, int phase)
 			}
 		}
 
-		POINT menu;
-		RECT but;
 
-		menu.y = 40;
-		menu.x = 10;
+		RECT but;
 
 		but = TopMenu::DrawButton(&dc, menu, 60, 23, "Refresh", autoRefresh);
 		ButtonToScreen(this, but, "Refresh Slot Data", BUTTON_MENU_REFRESH);
 
-		
-		menu.x = 80;
-		but = TopMenu::DrawButton(&dc, menu, 60, 23, CSiTRadar::eventCode.c_str(), 0);
+		POINT m2 = menu;
+		m2.x = menu.x + 65;
+		but = TopMenu::DrawButton(&dc, m2, 60, 23, CSiTRadar::eventCode.c_str(), 0);
 		ButtonToScreen(this, but, "Settings", BUTTON_MENU_SETTINGS);
 
 		// if correct event code, draw a green square:
@@ -139,11 +137,28 @@ void CSiTRadar::OnClickScreenObject(int ObjectType,
 		if (Button == BUTTON_LEFT) {
 			GetPlugIn()->OpenPopupEdit(Area, FUNCTION_SET_URL, CSiTRadar::eventCode.c_str());
 		}
+
+		if (Button == BUTTON_RIGHT) {
+
+		}
+	}
+}
+
+void CSiTRadar::OnMoveScreenObject(int ObjectType,
+	const char* sObjectId,
+	POINT Pt,
+	RECT Area,
+	bool Released) {
+
+	
+	if (ObjectType == BUTTON_MENU_REFRESH) {
+		menu.x = Pt.x - 30;
+		menu.y = Pt.y - 12;
 	}
 }
 
 void CSiTRadar::ButtonToScreen(CSiTRadar* radscr, RECT rect, string btext, int itemtype) {
-	AddScreenObject(itemtype, btext.c_str(), rect, 0, "");
+	AddScreenObject(itemtype, btext.c_str(), rect, 1, "");
 }
 
 void CSiTRadar::OnFlightPlanDisconnect(CFlightPlan FlightPlan) {
