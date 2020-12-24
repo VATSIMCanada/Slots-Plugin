@@ -75,6 +75,8 @@ void CDataHandler::GetVatsimAPIData(void* args) {
 			string error = cidJson.at("error");
 			data->Plugin->DisplayUserMessage("VATCAN Slot Manager", "Event Eror", error.c_str(), true, true, true, true, true);
 
+			CSiTRadar::amendStatus = 2;
+
 			return;
 		}
 		// Everything succeeded, show to user
@@ -143,7 +145,7 @@ void CDataHandler::GetVatsimAPIData(void* args) {
 	}
 
 	CSiTRadar::canAmend = TRUE;
-
+	CSiTRadar::amendStatus = 0;
 	delete args;
 }
 

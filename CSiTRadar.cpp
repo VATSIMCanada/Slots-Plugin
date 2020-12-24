@@ -23,6 +23,8 @@ CSiTRadar::CSiTRadar()
 
 	time = clock();
 	oldTime = clock();
+
+	amendStatus = 1;
 }
 
 void CSiTRadar::OnRefresh(HDC hdc, int phase)
@@ -83,19 +85,21 @@ void CSiTRadar::OnRefresh(HDC hdc, int phase)
 		menu.x = 80;
 		but = TopMenu::DrawButton(&dc, menu, 60, 23, CSiTRadar::eventCode.c_str(), 0);
 		ButtonToScreen(this, but, "Settings", BUTTON_MENU_SETTINGS);
+
 		// if correct event code, draw a green square:
 
-		if (canAmend) {
-
-			COLORREF targetPenColor = RGB(0, 150, 50);
+		COLORREF targetPenColor = RGB(0, 150, 50);
+		if (amendStatus == 1) {
+			targetPenColor = RGB(255, 188, 5);
+		}
+		if (amendStatus == 2) {
+			targetPenColor = RGB(153, 36, 0);
+		}
 			HPEN targetPen = CreatePen(PS_SOLID, 2, targetPenColor);
 			dc.SelectObject(targetPen);
 			dc.SelectStockObject(NULL_BRUSH);
 			dc.Rectangle(&but);
-			DeleteObject(targetPen);
-		}
-
-		
+			DeleteObject(targetPen);		
 	}
 
 	if (autoRefresh) {
@@ -121,7 +125,7 @@ void CSiTRadar::OnClickScreenObject(int ObjectType,
 		if (Button == BUTTON_LEFT) { 
 			
 			CSiTRadar::canAmend = FALSE;
-
+			CSiTRadar::amendStatus = 1;
 			CAsync* data = new CAsync();
 			data->Plugin = GetPlugIn();
 			_beginthread(CDataHandler::GetVatsimAPIData, 0, (void*) data);
