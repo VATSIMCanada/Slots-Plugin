@@ -95,6 +95,7 @@ void CSiTRadar::OnRefresh(HDC hdc, int phase)
 		if (amendStatus == 2) {
 			targetPenColor = RGB(153, 36, 0);
 		}
+			InflateRect(&but, 1, 1);
 			HPEN targetPen = CreatePen(PS_SOLID, 2, targetPenColor);
 			dc.SelectObject(targetPen);
 			dc.SelectStockObject(NULL_BRUSH);
