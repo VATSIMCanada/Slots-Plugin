@@ -9,7 +9,7 @@ SituPlugin::SituPlugin()
 	: EuroScopePlugIn::CPlugIn(EuroScopePlugIn::COMPATIBILITY_CODE,
 		"VATCAN Bookings",
 		"1.0.0RC",
-		"Ron Yan",
+		"VATCAN",
 		"Attribution-NonCommercial 4.0 International (CC BY-NC 4.0)")
 {
     RegisterTagItemType("Slot", TAG_ITEM_CTP_SLOT);
