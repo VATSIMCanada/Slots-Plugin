@@ -18,7 +18,7 @@ static size_t write_data(void* buffer, size_t size, size_t nmemb, void* userp) {
 }
 
 
-void CDataHandler::GetVatsimAPIData() {
+void CDataHandler::GetVatsimAPIurlData() {
 
 	CURL* vatsimStatus = curl_easy_init();
 
@@ -55,6 +55,7 @@ void CDataHandler::GetVatsimAPIData(void* args) {
 
 	CURL* curl = curl_easy_init();
 	CURL* curl1 = curl_easy_init();
+	CURL* curlNATTrack = curl_easy_init();
 
 	if (curl)
 	{
@@ -134,6 +135,8 @@ void CDataHandler::GetVatsimAPIData(void* args) {
 			}
 		}
 
+
+
 		string timeStamp = jsonArray["general"]["update_timestamp"];
 
 		// Everything succeeded, show to user
@@ -142,6 +145,44 @@ void CDataHandler::GetVatsimAPIData(void* args) {
 	}
 	catch (exception& e) {
 		data->Plugin->DisplayUserMessage("VATCAN Slot Manager", "Error", string("Failed to parse CID data" + string(e.what())).c_str(), true, true, true, true, true);
+	}
+
+	// Get NATTrack API information into ES
+	string NATTrackResponse;
+
+	if (curlNATTrack)
+	{
+		curl_easy_setopt(curlNATTrack, CURLOPT_URL, "https://dev.torontofir.ca/stats/natTrack.json");
+		curl_easy_setopt(curlNATTrack, CURLOPT_WRITEFUNCTION, write_data);
+		curl_easy_setopt(curlNATTrack, CURLOPT_WRITEDATA, &NATTrackResponse);
+		CURLcode res;
+		res = curl_easy_perform(curlNATTrack);
+		curl_easy_cleanup(curlNATTrack);
+	}
+
+	try {
+		auto jsonNATTrack = json::parse(NATTrackResponse);
+		if (!jsonNATTrack["pilots"].empty()) {
+			for (auto& array : jsonNATTrack["pilots"]) {
+				string natCallsign = array["callsign"];
+				if (CSiTRadar::mAcData.find(natCallsign) != CSiTRadar::mAcData.end()) {
+					CSiTRadar::mAcData[natCallsign].TAG_ITEM_NAT_STATUS = array["status"];
+					CSiTRadar::mAcData[natCallsign].TAG_ITEM_NAT_NAT = array["nat"];
+					CSiTRadar::mAcData[natCallsign].TAG_ITEM_NAT_FIX = array["fix"];
+					CSiTRadar::mAcData[natCallsign].TAG_ITEM_NAT_LEVEL = array["level"];
+					CSiTRadar::mAcData[natCallsign].TAG_ITEM_NAT_MACH = array["mach"];
+					CSiTRadar::mAcData[natCallsign].TAG_ITEM_NAT_ESTTIME = array["estimating_time"];
+					CSiTRadar::mAcData[natCallsign].TAG_ITEM_NAT_CLR = array["clearance_issued"];
+					CSiTRadar::mAcData[natCallsign].TAG_ITEM_NAT_EXTRA = array["extra_info"];
+				}
+			}
+		}
+
+		data->Plugin->DisplayUserMessage("VATCAN Slot Manager", "Update Successful", "NAT Track Status Updated", true, false, false, false, false);
+
+	}
+	catch (exception& e) {
+		data->Plugin->DisplayUserMessage("VATCAN Slot Manager", "Error", string("Failed to parse NATTRACK data" + string(e.what())).c_str(), true, true, true, true, true);
 	}
 
 	CSiTRadar::canAmend = TRUE;

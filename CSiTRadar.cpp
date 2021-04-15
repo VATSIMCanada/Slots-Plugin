@@ -1,8 +1,3 @@
-/*	
-2020 CTP Plugin-minimal version 
-VATUSA version
-*/
-
 #include "pch.h"
 #include "CSiTRadar.h"
 #include "TopMenu.h"
@@ -21,7 +16,7 @@ int CSiTRadar::tagLocation{ 2 };
 CSiTRadar::CSiTRadar()
 {	
 	CSiTRadar::eventCode = "Enter Code";
-	CDataHandler::GetVatsimAPIData();
+	CDataHandler::GetVatsimAPIurlData();
 
 	time = clock();
 	oldTime = clock();

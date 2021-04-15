@@ -11,7 +11,7 @@ class CDataHandler
 
 {
 public:
-	static void GetVatsimAPIData();
+	static void CDataHandler::GetVatsimAPIurlData();
 
 	static void CDataHandler::GetVatsimAPIData(void* args);
 	static void CDataHandler::AmendFlightPlans(void* args);
