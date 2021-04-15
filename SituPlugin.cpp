@@ -59,30 +59,34 @@ void SituPlugin::OnGetTagItem(EuroScopePlugIn::CFlightPlan FlightPlan,
         }
     }
     if (ItemCode == TAG_ITEM_CTP_CTOT) {
-        strcpy_s(sItemString, 16, CSiTRadar::mAcData[FlightPlan.GetCallsign()].slotTime.c_str());
+        strncpy_s(sItemString, 16, CSiTRadar::mAcData[FlightPlan.GetCallsign()].slotTime.c_str(), 15);
     }
     if (ItemCode == TAG_ITEM_NAT_STATUS) {
-        strcpy_s(sItemString, 16, CSiTRadar::mAcData[FlightPlan.GetCallsign()].slotTime.c_str());
+        strncpy_s(sItemString, 16, CSiTRadar::mAcData[FlightPlan.GetCallsign()].TAG_ITEM_NAT_STATUS.c_str(), 15);
     }
     if (ItemCode == TAG_ITEM_NAT_NAT) {
-        strcpy_s(sItemString, 16, CSiTRadar::mAcData[FlightPlan.GetCallsign()].TAG_ITEM_NAT_NAT.c_str());
+        strncpy_s(sItemString, 16, CSiTRadar::mAcData[FlightPlan.GetCallsign()].TAG_ITEM_NAT_NAT.c_str(), 15);
     }
     if (ItemCode == TAG_ITEM_NAT_FIX) {
-        strcpy_s(sItemString, 16, CSiTRadar::mAcData[FlightPlan.GetCallsign()].TAG_ITEM_NAT_FIX.c_str());
+        strncpy_s(sItemString, 16, CSiTRadar::mAcData[FlightPlan.GetCallsign()].TAG_ITEM_NAT_FIX.c_str(), 15);
     }
     if (ItemCode == TAG_ITEM_NAT_LEVEL) {
-        strcpy_s(sItemString, 16, CSiTRadar::mAcData[FlightPlan.GetCallsign()].TAG_ITEM_NAT_LEVEL.c_str());
+        strncpy_s(sItemString, 16, CSiTRadar::mAcData[FlightPlan.GetCallsign()].TAG_ITEM_NAT_LEVEL.c_str(), 15);
     }
     if (ItemCode == TAG_ITEM_NAT_MACH) {
-        strcpy_s(sItemString, 16, CSiTRadar::mAcData[FlightPlan.GetCallsign()].TAG_ITEM_NAT_MACH.c_str());
+        strncpy_s(sItemString, 16, CSiTRadar::mAcData[FlightPlan.GetCallsign()].TAG_ITEM_NAT_MACH.c_str(), 15);
     }
     if (ItemCode == TAG_ITEM_NAT_ESTTIME) {
-        strcpy_s(sItemString, 16, CSiTRadar::mAcData[FlightPlan.GetCallsign()].TAG_ITEM_NAT_ESTTIME.c_str());
+       strncpy_s(sItemString, 16, CSiTRadar::mAcData[FlightPlan.GetCallsign()].TAG_ITEM_NAT_ESTTIME.c_str(), 15);
     }
     if (ItemCode == TAG_ITEM_NAT_CLR) {
-        strcpy_s(sItemString, 16, CSiTRadar::mAcData[FlightPlan.GetCallsign()].TAG_ITEM_NAT_CLR.c_str());
+        string clearedTime;
+        if (CSiTRadar::mAcData[FlightPlan.GetCallsign()].TAG_ITEM_NAT_CLR.length() > 16) {
+            clearedTime = CSiTRadar::mAcData[FlightPlan.GetCallsign()].TAG_ITEM_NAT_CLR.substr(11, 5);
+        }
+        strncpy_s(sItemString, 16, clearedTime.c_str(), 15);
     }
     if (ItemCode == TAG_ITEM_NAT_EXTRA) {
-        strcpy_s(sItemString, 16, CSiTRadar::mAcData[FlightPlan.GetCallsign()].TAG_ITEM_NAT_EXTRA.c_str());
+        strncpy_s(sItemString, 16, CSiTRadar::mAcData[FlightPlan.GetCallsign()].TAG_ITEM_NAT_EXTRA.c_str(), 15);
     }
 }

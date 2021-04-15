@@ -45,7 +45,7 @@ void CDataHandler::GetVatsimAPIData(void* args) {
 	CAsync* data = (CAsync*)args;
 
 	CDataHandler::url1 = "https://bookings.vatcan.ca/api/event/" + CSiTRadar::eventCode;
-	CDataHandler::refreshInterval = 300;
+	CDataHandler::refreshInterval = 60;
 	CDataHandler::tagLabel = "EVT";
 	CDataHandler::vatsimJson3URL;
 
@@ -162,8 +162,8 @@ void CDataHandler::GetVatsimAPIData(void* args) {
 
 	try {
 		auto jsonNATTrack = json::parse(NATTrackResponse);
-		if (!jsonNATTrack["pilots"].empty()) {
-			for (auto& array : jsonNATTrack["pilots"]) {
+		if (!jsonNATTrack.empty()) {
+			for (auto& array : jsonNATTrack) {
 				string natCallsign = array["callsign"];
 				if (CSiTRadar::mAcData.find(natCallsign) != CSiTRadar::mAcData.end()) {
 					CSiTRadar::mAcData[natCallsign].TAG_ITEM_NAT_STATUS = array["status"];
