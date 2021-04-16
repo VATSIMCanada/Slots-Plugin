@@ -17,6 +17,14 @@ struct ACData {
     bool hasCTP;
     string slotTime;
     string CID = "";
+    string TAG_ITEM_NAT_STATUS = "";
+    string TAG_ITEM_NAT_NAT = "";
+    string TAG_ITEM_NAT_FIX = "";
+    string TAG_ITEM_NAT_LEVEL = "";
+    string TAG_ITEM_NAT_MACH = "";
+    string TAG_ITEM_NAT_ESTTIME = "";
+    string TAG_ITEM_NAT_CLR = "";
+    string TAG_ITEM_NAT_EXTRA = "";
 };
 
 class CSiTRadar :
