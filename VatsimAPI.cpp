@@ -166,14 +166,14 @@ void CDataHandler::GetVatsimAPIData(void* args) {
 			for (auto& array : jsonNATTrack) {
 				string natCallsign = array["callsign"];
 				if (CSiTRadar::mAcData.find(natCallsign) != CSiTRadar::mAcData.end()) {
-					CSiTRadar::mAcData[natCallsign].TAG_ITEM_NAT_STATUS = array["status"];
-					CSiTRadar::mAcData[natCallsign].TAG_ITEM_NAT_NAT = array["nat"];
-					CSiTRadar::mAcData[natCallsign].TAG_ITEM_NAT_FIX = array["fix"];
-					CSiTRadar::mAcData[natCallsign].TAG_ITEM_NAT_LEVEL = array["level"];
-					CSiTRadar::mAcData[natCallsign].TAG_ITEM_NAT_MACH = array["mach"];
-					CSiTRadar::mAcData[natCallsign].TAG_ITEM_NAT_ESTTIME = array["estimating_time"];
-					CSiTRadar::mAcData[natCallsign].TAG_ITEM_NAT_CLR = array["clearance_issued"];
-					CSiTRadar::mAcData[natCallsign].TAG_ITEM_NAT_EXTRA = array["extra_info"];
+					if (!array["status"].is_null()) { CSiTRadar::mAcData[natCallsign].TAG_ITEM_NAT_STATUS = array["status"]; }
+					if (!array["nat"].is_null()) { CSiTRadar::mAcData[natCallsign].TAG_ITEM_NAT_NAT = array["nat"]; }
+					if (!array["fix"].is_null()) { CSiTRadar::mAcData[natCallsign].TAG_ITEM_NAT_FIX = array["fix"]; }
+					if (!array["level"].is_null()) { CSiTRadar::mAcData[natCallsign].TAG_ITEM_NAT_LEVEL = array["level"]; }
+					if (!array["mach"].is_null()) { CSiTRadar::mAcData[natCallsign].TAG_ITEM_NAT_MACH = array["mach"]; }
+					if (!array["estimating_time"].is_null()) { CSiTRadar::mAcData[natCallsign].TAG_ITEM_NAT_ESTTIME = array["estimating_time"]; }
+					if (!array["clearance_issued"].is_null()) { CSiTRadar::mAcData[natCallsign].TAG_ITEM_NAT_CLR = array["clearance_issued"]; }
+					if (!array["extra_info"].is_null()) { CSiTRadar::mAcData[natCallsign].TAG_ITEM_NAT_EXTRA = array["extra_info"]; }
 				}
 			}
 		}
