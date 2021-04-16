@@ -20,5 +20,10 @@ public:
 	static int CDataHandler::refreshInterval;
 	static string CDataHandler::tagLabel;
 	static string CDataHandler::vatsimJson3URL;
+	static bool firstSlotPull;
+
+protected:
+	static clock_t timeSlotUpdate;
+	static clock_t oldTime;
 
 };

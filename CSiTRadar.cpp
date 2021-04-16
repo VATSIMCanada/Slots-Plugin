@@ -15,7 +15,6 @@ int CSiTRadar::tagLocation{ 2 };
 
 CSiTRadar::CSiTRadar()
 {	
-	CSiTRadar::eventCode = "Enter Code";
 	CDataHandler::GetVatsimAPIurlData();
 
 	time = clock();
@@ -201,6 +200,7 @@ void CSiTRadar::OnFunctionCall(int FunctionId,
 			CSiTRadar::eventCode = sItemString;
 		}
 		catch (...) {}
+		CDataHandler::firstSlotPull = TRUE;
 	}
 }
 

@@ -30,6 +30,8 @@ SituPlugin::SituPlugin()
     RegisterTagItemType("estimating_time", TAG_ITEM_NAT_ESTTIME);
     RegisterTagItemType("clearance_issued", TAG_ITEM_NAT_CLR);
     RegisterTagItemType("extra_info", TAG_ITEM_NAT_EXTRA);
+
+    CSiTRadar::eventCode = "Enter Code";
 }
 
 SituPlugin::~SituPlugin()
