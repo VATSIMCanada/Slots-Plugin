@@ -10,7 +10,7 @@ bool CSiTRadar::canAmend;
 int CSiTRadar::refreshStatus;
 int CSiTRadar::amendStatus;
 string CSiTRadar::eventCode;
-POINT CSiTRadar::menu{ 10, 40 };
+POINT CSiTRadar::menu{ 10, 140 };
 int CSiTRadar::tagLocation{ 2 };
 
 CSiTRadar::CSiTRadar()
