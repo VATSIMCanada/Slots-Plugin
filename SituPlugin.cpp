@@ -1,6 +1,10 @@
 #include "pch.h"
 #include "SituPlugin.h"
 #include "CSiTRadar.h"
+#include "json.hpp"
+#include "vatsimAPI.h"
+
+using json = nlohmann::json;
 
 const int TAG_ITEM_CTP_SLOT = 5000;
 const int TAG_ITEM_CTP_CTOT = 5001;
@@ -32,6 +36,25 @@ SituPlugin::SituPlugin()
     RegisterTagItemType("extra_info", TAG_ITEM_NAT_EXTRA);
 
     CSiTRadar::eventCode = "Enter Code";
+
+    try {
+
+        std::ifstream settings_file(".\\vatcan_bookings.json");
+        if (settings_file.is_open()) {
+            json j = json::parse(settings_file);
+
+            CSiTRadar::eventCode = j["evtCode"];
+            CDataHandler::tagLabel = j["evtLabel"];
+        }
+        else {
+            
+            CSiTRadar::eventCode = "Enter Code";
+            CDataHandler::tagLabel = "EVT";
+        }
+    }
+    catch (std::ifstream::failure e) {
+
+    };
 }
 
 SituPlugin::~SituPlugin()
