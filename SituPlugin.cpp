@@ -20,7 +20,7 @@ const int TAG_ITEM_NAT_EXTRA = 5009;
 SituPlugin::SituPlugin()
 	: EuroScopePlugIn::CPlugIn(EuroScopePlugIn::COMPATIBILITY_CODE,
 		"VATCAN Bookings",
-		"1.1.0",
+		"1.1.1",
 		"VATCAN",
 		"Attribution-NonCommercial 4.0 International (CC BY-NC 4.0)")
 {
