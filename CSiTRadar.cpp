@@ -130,6 +130,11 @@ void CSiTRadar::OnRefresh(HDC hdc, int phase)
 			CAsync* data = new CAsync();
 			data->Plugin = GetPlugIn();
 			_beginthread(CDataHandler::GetVatsimAPIData, 0, (void*) data);
+
+			CAsync* data1 = new CAsync();
+			data1->Plugin = GetPlugIn();
+			_beginthread(CDataHandler::AmendFlightPlans, 0, (void*)data1);
+
 			oldTime = clock();
 		}
 	}

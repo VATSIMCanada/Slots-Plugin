@@ -227,20 +227,20 @@ void CDataHandler::AmendFlightPlans(void* args) {
 
 				if (oldRemarks.find("CTP SLOT") == string::npos) {
 
-					newRemarks = (string)"CTP SLOT / " + timeStr + " " + oldRemarks;
+					newRemarks = (string)"CTP SLOT / " + CSiTRadar::mAcData[flightPlan.GetCallsign()].slotTime + " " + oldRemarks;
 					flightPlan.GetFlightPlanData().SetRemarks(newRemarks.c_str());
 				}
 			}
 			// If someone adds CTP SLOT to their remarks, but isn't on the list, then flag this in the remarks
 			else {
 				if (oldRemarks.find("CTP SLOT") != string::npos && oldRemarks.find("CTP MISMATCH") == string::npos) {
-					newRemarks = (string)"CTP MISMATCH / NON EVENT / " + timeStr + " " + oldRemarks;
+					newRemarks = (string)"CTP MISMATCH / NON EVENT / " + oldRemarks;
 
 					flightPlan.GetFlightPlanData().SetRemarks(newRemarks.c_str());
 				}
 
 				else if (oldRemarks.find("NON EVENT") == string::npos) {
-					newRemarks = (string)"NON EVENT / " + timeStr + " " + oldRemarks;
+					newRemarks = (string)"NON EVENT / " + oldRemarks;
 
 					flightPlan.GetFlightPlanData().SetRemarks(newRemarks.c_str());
 				}
