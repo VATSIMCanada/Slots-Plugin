@@ -249,7 +249,7 @@ void CDataHandler::AmendFlightPlans(void* args) {
 		}
 		countFP++;
 	}
-	data->Plugin->DisplayUserMessage("Slot Helper", "Success", (to_string(countFP) + (string)" Flight Plans Updated").c_str(), true, false, false, false, false);
+	data->Plugin->DisplayUserMessage("VATCAN Slot Manager", "FP Amended Successfully", (to_string(countFP) + (string)" Flight Plans Updated").c_str(), true, false, false, false, false);
 
 	delete args;
 }

@@ -150,6 +150,10 @@ void CSiTRadar::OnClickScreenObject(int ObjectType,
 			CAsync* data = new CAsync();
 			data->Plugin = GetPlugIn();
 			_beginthread(CDataHandler::GetVatsimAPIData, 0, (void*) data);
+
+			CAsync* data1 = new CAsync();
+			data1->Plugin = GetPlugIn();
+			_beginthread(CDataHandler::AmendFlightPlans, 0, (void*) data1);
 				
 			oldTime = clock(); }
 		if (Button == BUTTON_RIGHT) { autoRefresh = !autoRefresh; }
