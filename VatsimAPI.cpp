@@ -217,8 +217,9 @@ void CDataHandler::AmendFlightPlans(void* args) {
 		flightPlan = data->Plugin->FlightPlanSelectNext(flightPlan)) {
 		oldRemarks = flightPlan.GetFlightPlanData().GetRemarks();
 
-		// if the callsign has not been correlated with a CID, don't try to amend the Flightplan yet, needs update from vatsim status
+		// if the callsign has not been correlated with a CID, don't try to amend theFlightplan yet, needs update from vatsim status
 		if (CSiTRadar::mAcData[flightPlan.GetCallsign()].CID == "") { continue; }
+		if (flightPlan.GetFlightPlanData().IsAmended()) { continue;  }
 
 		if (flightPlan.GetFlightPlanData().IsReceived()) {
 
