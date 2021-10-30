@@ -227,7 +227,7 @@ void CDataHandler::AmendFlightPlans(void* args) {
 
 				if (oldRemarks.find("CTP SLOT") == string::npos) {
 
-					newRemarks = (string)"CTP SLOT / " + CSiTRadar::mAcData[flightPlan.GetCallsign()].slotTime + " " + oldRemarks;
+					newRemarks = (string)"CTP SLOT / " + CSiTRadar::mAcData[flightPlan.GetCallsign()].slotTime + (string)" " + oldRemarks;
 					flightPlan.GetFlightPlanData().SetRemarks(newRemarks.c_str());
 				}
 			}
