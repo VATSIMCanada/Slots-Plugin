@@ -161,7 +161,7 @@ void CDataHandler::GetVatsimAPIData(void* args) {
 
 	if (curlNATTrack)
 	{
-		curl_easy_setopt(curlNATTrack, CURLOPT_URL, "https://nattrak.vatsim.net/pluginapi.php");
+		curl_easy_setopt(curlNATTrack, CURLOPT_URL, " https://nattrak.vatsim.net/api/plugins/");
 		curl_easy_setopt(curlNATTrack, CURLOPT_WRITEFUNCTION, write_data);
 		curl_easy_setopt(curlNATTrack, CURLOPT_WRITEDATA, &NATTrackResponse);
 		CURLcode res;
