@@ -9,7 +9,8 @@ on:
 
 jobs:
   build:
-    runs-on: windows-latest
+    # This runner has VS2019 and MFC pre-installed
+    runs-on: windows-2019
 
     steps:
       - name: Checkout Code
@@ -20,22 +21,7 @@ jobs:
       - name: Setup MSBuild
         uses: microsoft/setup-msbuild@v2
 
-      - name: Install MFC and v142 Toolset
-        shell: pwsh
-        run: |
-          $installer = "C:\Program Files (x86)\Microsoft Visual Studio\Installer\vs_installer.exe"
-          
-          # This specifically adds the v142 toolset and its version of MFC/ATL
-          $process = Start-Process $installer -ArgumentList 'modify', 
-            '--installPath "C:\Program Files\Microsoft Visual Studio\2022\Enterprise"', 
-            '--add Microsoft.VisualStudio.Component.VC.v142.x86.x64', 
-            '--add Microsoft.VisualStudio.Component.VC.v142.MFC',
-            '--add Microsoft.VisualStudio.Component.VC.v142.ATL',
-            '--quiet', '--norestart' -Wait -PassThru
-          
-          Write-Host "Waiting for installer cleanup..."
-          # Increased wait time to ensure the file system settles
-          Start-Sleep -Seconds 90
+      # We no longer need the manual 'Install MFC' step here
 
       - name: Install Dependencies via vcpkg
         run: |
@@ -43,8 +29,9 @@ jobs:
           vcpkg install --triplet x86-windows
 
       - name: Build Solution
+        # Using x86 to match the Solution's 32-bit configuration
         run: |
-          msbuild VATCANSitu.sln /p:Configuration=Release /p:Platform=x86 /p:PlatformToolset=v142 /p:VcpkgEnableManifest=true
+          msbuild VATCANSitu.sln /p:Configuration=Release /p:Platform=x86 /p:VcpkgEnableManifest=true
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
