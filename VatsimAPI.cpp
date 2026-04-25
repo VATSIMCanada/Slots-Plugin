@@ -5,7 +5,6 @@
 #include "json.hpp"
 #include "curl/curl.h"
 
-// Include dependency
 using json = nlohmann::json;
 string CDataHandler::url1;
 int CDataHandler::refreshInterval;
@@ -16,187 +15,148 @@ clock_t CDataHandler::timeSlotUpdate = clock();
 clock_t CDataHandler::oldTime = clock();
 
 static size_t write_data(void* buffer, size_t size, size_t nmemb, void* userp) {
-	((std::string*)userp)->append((char*)buffer, size * nmemb);
-	return size * nmemb;
+    ((std::string*)userp)->append((char*)buffer, size * nmemb);
+    return size * nmemb;
 }
 
+// Helper to setup standard modern CURL options
+void setup_curl_modern(CURL* h, const char* url, string* response) {
+    curl_easy_setopt(h, CURLOPT_URL, url);
+    curl_easy_setopt(h, CURLOPT_WRITEFUNCTION, write_data);
+    curl_easy_setopt(h, CURLOPT_WRITEDATA, response);
+    curl_easy_setopt(h, CURLOPT_FOLLOWLOCATION, 1L); // Follow redirects from Nginx
+    curl_easy_setopt(h, CURLOPT_SSL_VERIFYPEER, 1L); // Modern SSL security
+    curl_easy_setopt(h, CURLOPT_SSL_VERIFYHOST, 2L);
+    curl_easy_setopt(h, CURLOPT_TIMEOUT, 10L);       // Don't hang the plugin
+}
 
 void CDataHandler::GetVatsimAPIurlData() {
-
-	CURL* vatsimStatus = curl_easy_init();
-
-	string vatsimURLs;
-
-	if (vatsimStatus)
-	{
-
-		curl_easy_setopt(vatsimStatus, CURLOPT_URL, "https://status.vatsim.net/");
-		curl_easy_setopt(vatsimStatus, CURLOPT_WRITEFUNCTION, write_data);
-		curl_easy_setopt(vatsimStatus, CURLOPT_WRITEDATA, &vatsimURLs);
-		CURLcode res;
-		res = curl_easy_perform(vatsimStatus);
-		curl_easy_cleanup(vatsimStatus);
-	}
-	size_t pos = vatsimURLs.find("json3=");
-	vatsimURLs = vatsimURLs.substr(pos+6);
-	CDataHandler::vatsimJson3URL = vatsimURLs.substr(0, vatsimURLs.find("\n") - 1 );
-
+    CURL* vatsimStatus = curl_easy_init();
+    string vatsimURLs;
+    if (vatsimStatus) {
+        setup_curl_modern(vatsimStatus, "https://status.vatsim.net/", &vatsimURLs);
+        if (curl_easy_perform(vatsimStatus) == CURLE_OK) {
+            size_t pos = vatsimURLs.find("json3=");
+            if (pos != string::npos) {
+                vatsimURLs = vatsimURLs.substr(pos + 6);
+                CDataHandler::vatsimJson3URL = vatsimURLs.substr(0, vatsimURLs.find("\n") - 1);
+            }
+        }
+        curl_easy_cleanup(vatsimStatus);
+    }
 }
 
 void CDataHandler::GetVatsimAPIData(void* args) {
+    CAsync* data = (CAsync*)args;
+    CDataHandler::url1 = "https://bookings.vatcan.ca/api/event/" + CSiTRadar::eventCode;
+    CDataHandler::refreshInterval = 60;
+    CDataHandler::tagLabel = "EVT";
 
-	CAsync* data = (CAsync*)args;
+    string cidString;
+    json cidJson;
+    CDataHandler::timeSlotUpdate = clock();
+    
+    // --- PART 1: Fetch VATCAN Slots ---
+    if (((CDataHandler::timeSlotUpdate - CDataHandler::oldTime) / CLOCKS_PER_SEC > 300) || CDataHandler::firstSlotPull) {
+        CURL* curl = curl_easy_init();
+        if (curl) {
+            setup_curl_modern(curl, CDataHandler::url1.c_str(), &cidString);
+            CURLcode res = curl_easy_perform(curl);
+            curl_easy_cleanup(curl);
 
-	CDataHandler::url1 = "https://bookings.vatcan.ca/api/event/" + CSiTRadar::eventCode;
-	CDataHandler::refreshInterval = 60;
-	CDataHandler::tagLabel = "EVT";
-	CDataHandler::vatsimJson3URL;
+            if (res == CURLE_OK) {
+                try {
+                    cidJson = json::parse(cidString);
+                    if (cidJson.contains("error")) {
+                        string error = cidJson.at("error");
+                        data->Plugin->DisplayUserMessage("VATCAN Slot Manager", "API Error", error.c_str(), true, true, true, true, true);
+                        CSiTRadar::amendStatus = 2;
+                    } else {
+                        data->Plugin->DisplayUserMessage("VATCAN Slot Manager", "Update Successful", "Slot times parsed", true, false, false, false, false);
+                    }
+                } catch (exception& e) {
+                    data->Plugin->DisplayUserMessage("VATCAN Slot Manager", "Parse Error", (string("Slots failed: ") + e.what()).c_str(), true, true, true, true, true);
+                }
+            } else {
+                string errStr = curl_easy_strerror(res);
+                data->Plugin->DisplayUserMessage("VATCAN Slot Manager", "Network Error", (string("Connect failed: ") + errStr).c_str(), true, true, true, true, true);
+            }
+        }
+        CDataHandler::oldTime = clock();
+        CDataHandler::firstSlotPull = FALSE;
+    }
 
-	string cidString;
-	json cidJson;
+    // --- PART 2: Fetch VATSIM Data File ---
+    string responseString;
+    CURL* curl1 = curl_easy_init();
+    if (curl1 && !CDataHandler::vatsimJson3URL.empty()) {
+        setup_curl_modern(curl1, CDataHandler::vatsimJson3URL.c_str(), &responseString);
+        CURLcode res = curl_easy_perform(curl1);
+        curl_easy_cleanup(curl1);
 
+        if (res == CURLE_OK) {
+            try {
+                auto jsonArray = json::parse(responseString);
+                if (!cidJson.empty()) {
+                    for (auto& pilots : cidJson) {
+                        int cid = pilots["cid"];
+                        string slot = pilots["slot"];
+                        CSiTRadar::slotTime[cid] = slot;
+                    }
+                }
+                if (jsonArray.contains("pilots") && !jsonArray["pilots"].empty()) {
+                    for (auto& array : jsonArray["pilots"]) {
+                        string apiCallsign = array["callsign"];
+                        int apiCID = array["cid"];
+                        CSiTRadar::mAcData[apiCallsign].CID = to_string(apiCID);
+                        if (CSiTRadar::slotTime.count(apiCID)) {
+                            CSiTRadar::mAcData[apiCallsign].slotTime = CSiTRadar::slotTime[apiCID];
+                            CSiTRadar::mAcData[apiCallsign].hasCTP = TRUE;
+                        } else {
+                            CSiTRadar::mAcData[apiCallsign].slotTime = "";
+                            CSiTRadar::mAcData[apiCallsign].hasCTP = FALSE;
+                        }
+                    }
+                }
+                string timeStamp = jsonArray["general"]["update_timestamp"];
+                data->Plugin->DisplayUserMessage("VATCAN Slot Manager", "Update Successful", (string("CIDs fetched at ") + timeStamp).c_str(), true, false, false, false, false);
+            } catch (exception& e) {
+                data->Plugin->DisplayUserMessage("VATCAN Slot Manager", "Parse Error", (string("VATSIM Data failed: ") + e.what()).c_str(), true, true, true, true, true);
+            }
+        }
+    }
 
-	CURL* curl = curl_easy_init();
-	CURL* curl1 = curl_easy_init();
-	CURL* curlNATTrack = curl_easy_init();
+    // --- PART 3: Fetch NATTRACK ---
+    string NATTrackResponse;
+    CURL* curlNATTrack = curl_easy_init();
+    if (curlNATTrack) {
+        setup_curl_modern(curlNATTrack, "https://nattrak.vatsim.net/api/plugins", &NATTrackResponse);
+        if (curl_easy_perform(curlNATTrack) == CURLE_OK) {
+            try {
+                auto jsonNATTrack = json::parse(NATTrackResponse);
+                for (auto& array : jsonNATTrack) {
+                    string natCallsign = array["callsign"];
+                    if (CSiTRadar::mAcData.count(natCallsign)) {
+                        auto& d = CSiTRadar::mAcData[natCallsign];
+                        if (!array["status"].is_null()) d.TAG_ITEM_NAT_STATUS = array["status"];
+                        if (!array["nat"].is_null()) d.TAG_ITEM_NAT_NAT = array["nat"];
+                        if (!array["fix"].is_null()) d.TAG_ITEM_NAT_FIX = array["fix"];
+                        if (!array["level"].is_null()) d.TAG_ITEM_NAT_LEVEL = array["level"];
+                        if (!array["mach"].is_null()) d.TAG_ITEM_NAT_MACH = array["mach"];
+                        if (!array["estimating_time"].is_null()) d.TAG_ITEM_NAT_ESTTIME = array["estimating_time"];
+                        if (!array["clearance_issued"].is_null()) d.TAG_ITEM_NAT_CLR = array["clearance_issued"];
+                        if (!array["extra_info"].is_null()) d.TAG_ITEM_NAT_EXTRA = array["extra_info"];
+                    }
+                }
+                data->Plugin->DisplayUserMessage("VATCAN Slot Manager", "Update Successful", "NAT Track Updated", true, false, false, false, false);
+            } catch (...) {}
+        }
+        curl_easy_cleanup(curlNATTrack);
+    }
 
-	CDataHandler::timeSlotUpdate = clock();
-	
-	if (((CDataHandler::timeSlotUpdate - CDataHandler::oldTime) / CLOCKS_PER_SEC > 300) || CDataHandler::firstSlotPull) {
-
-		if (curl)
-		{
-			curl_easy_setopt(curl, CURLOPT_URL, CDataHandler::url1.c_str());
-			curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_data);
-			curl_easy_setopt(curl, CURLOPT_WRITEDATA, &cidString);
-			CURLcode res;
-			res = curl_easy_perform(curl);
-			curl_easy_cleanup(curl);
-		}
-
-		try {
-
-			// Now we parse the json
-			cidJson = json::parse(cidString);
-
-			if (cidJson.find("error") != cidJson.end()) {
-				string error = cidJson.at("error");
-				data->Plugin->DisplayUserMessage("VATCAN Slot Manager", "Error", error.c_str(), true, true, true, true, true);
-
-				CSiTRadar::amendStatus = 2;
-
-				return;
-			}
-			// Everything succeeded, show to user
-
-			data->Plugin->DisplayUserMessage("VATCAN Slot Manager", "Update Successful", string("Slot times parsed").c_str(), true, false, false, false, false);
-
-		}
-		catch (exception& e) {
-			data->Plugin->DisplayUserMessage("VATCAN Slot Manager", "Error", string("Failed to parse slot data. Please check event code." + string(e.what())).c_str(), true, true, true, true, true);
-
-		}
-		CDataHandler::oldTime = clock();
-		CDataHandler::firstSlotPull = FALSE;
-	}
-	// Parse CID data from the VATSIM API
-
-	string responseString;
-
-	if (curl1)
-	{
-		curl_easy_setopt(curl1, CURLOPT_URL, CDataHandler::vatsimJson3URL.c_str());
-		curl_easy_setopt(curl1, CURLOPT_WRITEFUNCTION, write_data);
-		curl_easy_setopt(curl1, CURLOPT_WRITEDATA, &responseString);
-		CURLcode res;
-		res = curl_easy_perform(curl1);
-		curl_easy_cleanup(curl1);
-	}
-
-	try {
-
-		// Now we parse the json
-		auto jsonArray = json::parse(responseString);
-		if (!cidJson.empty()) {
-			for (auto& pilots : cidJson) {
-				int cid = pilots["cid"];
-				string slot = pilots["slot"];
-
-				CSiTRadar::slotTime[cid] = slot;
-			}
-		}
-
-		if (!jsonArray["pilots"].empty()) {
-			for (auto& array : jsonArray["pilots"]) {
-				string apiCallsign = array["callsign"];
-				int apiCID = array["cid"];
-
-				CSiTRadar::mAcData[apiCallsign].CID = apiCID;
-
-				if (CSiTRadar::slotTime.find(apiCID) != CSiTRadar::slotTime.end()) {
-					CSiTRadar::mAcData[apiCallsign].slotTime = CSiTRadar::slotTime[apiCID];
-					CSiTRadar::mAcData[apiCallsign].hasCTP = TRUE;
-				}
-				else {
-					CSiTRadar::mAcData[apiCallsign].slotTime = "";
-					CSiTRadar::mAcData[apiCallsign].hasCTP = FALSE;
-				}
-			}
-		}
-
-
-
-		string timeStamp = jsonArray["general"]["update_timestamp"];
-
-		// Everything succeeded, show to user
-		data->Plugin->DisplayUserMessage("VATCAN Slot Manager", "Update Successful", string("CIDs fetched at " + timeStamp).c_str(), true, false, false, false, false);
-
-	}
-	catch (exception& e) {
-		data->Plugin->DisplayUserMessage("VATCAN Slot Manager", "Error", string("Failed to parse CID data" + string(e.what())).c_str(), true, true, true, true, true);
-	}
-
-	// Get NATTrack API information into ES
-	string NATTrackResponse;
-
-	if (curlNATTrack)
-	{
-		curl_easy_setopt(curlNATTrack, CURLOPT_URL, "https://nattrak.vatsim.net/api/plugins");
-		curl_easy_setopt(curlNATTrack, CURLOPT_WRITEFUNCTION, write_data);
-		curl_easy_setopt(curlNATTrack, CURLOPT_WRITEDATA, &NATTrackResponse);
-		CURLcode res;
-		res = curl_easy_perform(curlNATTrack);
-		curl_easy_cleanup(curlNATTrack);
-	}
-
-	try {
-		auto jsonNATTrack = json::parse(NATTrackResponse);
-		if (!jsonNATTrack.empty()) {
-			for (auto& array : jsonNATTrack) {
-				string natCallsign = array["callsign"];
-				if (CSiTRadar::mAcData.find(natCallsign) != CSiTRadar::mAcData.end()) {
-					if (!array["status"].is_null()) { CSiTRadar::mAcData[natCallsign].TAG_ITEM_NAT_STATUS = array["status"]; }
-					if (!array["nat"].is_null()) { CSiTRadar::mAcData[natCallsign].TAG_ITEM_NAT_NAT = array["nat"]; }
-					if (!array["fix"].is_null()) { CSiTRadar::mAcData[natCallsign].TAG_ITEM_NAT_FIX = array["fix"]; }
-					if (!array["level"].is_null()) { CSiTRadar::mAcData[natCallsign].TAG_ITEM_NAT_LEVEL = array["level"]; }
-					if (!array["mach"].is_null()) { CSiTRadar::mAcData[natCallsign].TAG_ITEM_NAT_MACH = array["mach"]; }
-					if (!array["estimating_time"].is_null()) { CSiTRadar::mAcData[natCallsign].TAG_ITEM_NAT_ESTTIME = array["estimating_time"]; }
-					if (!array["clearance_issued"].is_null()) { CSiTRadar::mAcData[natCallsign].TAG_ITEM_NAT_CLR = array["clearance_issued"]; }
-					if (!array["extra_info"].is_null()) { CSiTRadar::mAcData[natCallsign].TAG_ITEM_NAT_EXTRA = array["extra_info"]; }
-				}
-			}
-		}
-
-		data->Plugin->DisplayUserMessage("VATCAN Slot Manager", "Update Successful", "NAT Track Status Updated", true, false, false, false, false);
-
-	}
-	catch (exception& e) {
-		data->Plugin->DisplayUserMessage("VATCAN Slot Manager", "Error", string("Failed to parse NATTRACK data" + string(e.what())).c_str(), true, true, true, true, true);
-	}
-
-	CSiTRadar::canAmend = TRUE;
-	CSiTRadar::amendStatus = 0;
-	delete args;
+    CSiTRadar::canAmend = TRUE;
+    CSiTRadar::amendStatus = 0;
+    delete args;
 }
 
 void CDataHandler::AmendFlightPlans(void* args) {
