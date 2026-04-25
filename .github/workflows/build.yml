@@ -20,7 +20,6 @@ jobs:
       - name: Setup MSBuild
         uses: microsoft/setup-msbuild@v2
 
-      # Using a more reliable method to install MFC and the v142 (VS 2019) toolset
       - name: Install MFC and v142 Toolset
         run: |
           & "C:\Program Files (x86)\Microsoft Visual Studio\Installer\vs_installer.exe" modify `
@@ -29,11 +28,10 @@ jobs:
           --add Microsoft.VisualStudio.Component.VC.ATLMFC `
           --quiet --norestart --wait
 
-      # vcpkg handles the modern HTTPS/JSON libraries for us
       - name: Install Dependencies via vcpkg
         run: |
           vcpkg integrate install
-          vcpkg install curl:x86-windows nlohmann-json:x86-windows
+          vcpkg install --triplet x86-windows
 
       - name: Build Solution
         # /p:PlatformToolset=v142 ensures we use the VS 2019 compiler compatibility
