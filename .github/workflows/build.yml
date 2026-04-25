@@ -21,12 +21,18 @@ jobs:
         uses: microsoft/setup-msbuild@v2
 
       - name: Install MFC and v142 Toolset
+        shell: pwsh
         run: |
-          & "C:\Program Files (x86)\Microsoft Visual Studio\Installer\vs_installer.exe" modify `
-          --installPath "C:\Program Files\Microsoft Visual Studio\2022\Enterprise" `
-          --add Microsoft.VisualStudio.Component.VC.v142.x86.x64 `
-          --add Microsoft.VisualStudio.Component.VC.ATLMFC `
-          --quiet --norestart --wait
+          $installer = "C:\Program Files (x86)\Microsoft Visual Studio\Installer\vs_installer.exe"
+          $process = Start-Process $installer -ArgumentList 'modify', 
+            '--installPath "C:\Program Files\Microsoft Visual Studio\2022\Enterprise"', 
+            '--add Microsoft.VisualStudio.Component.VC.v142.x86.x64', 
+            '--add Microsoft.VisualStudio.Component.VC.ATLMFC', 
+            '--quiet', '--norestart' -Wait -PassThru
+          
+          # Force a 2-minute wait to allow background configuration to finish
+          Write-Host "Waiting for installer cleanup..."
+          Start-Sleep -Seconds 120
 
       - name: Install Dependencies via vcpkg
         run: |
