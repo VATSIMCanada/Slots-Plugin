@@ -41,7 +41,7 @@ jobs:
 
       - name: Build Solution
         run: |
-          msbuild VATCANSitu.sln /p:Configuration=Release /p:Platform=Win32 /p:PlatformToolset=v142 /p:VcpkgEnableManifest=true
+          msbuild VATCANSitu.sln /p:Configuration=Release /p:Platform=x86 /p:PlatformToolset=v142 /p:VcpkgEnableManifest=true
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
