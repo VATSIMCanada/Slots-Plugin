@@ -20,20 +20,25 @@ jobs:
       - name: Setup MSBuild
         uses: microsoft/setup-msbuild@v2
 
-      - name: Install MFC and ATL
-        uses: ammaraskar/setup-cpp@master
-        with:
-          visual-studio-version: '2022'
-          components: 'Microsoft.VisualStudio.Component.VC.ATLMFC;Microsoft.VisualStudio.Component.VC.v142.MFC;Microsoft.VisualStudio.Component.VC.v142.ATL'
+      # Using a more reliable method to install MFC and the v142 (VS 2019) toolset
+      - name: Install MFC and v142 Toolset
+        run: |
+          & "C:\Program Files (x86)\Microsoft Visual Studio\Installer\vs_installer.exe" modify `
+          --installPath "C:\Program Files\Microsoft Visual Studio\2022\Enterprise" `
+          --add Microsoft.VisualStudio.Component.VC.v142.x86.x64 `
+          --add Microsoft.VisualStudio.Component.VC.ATLMFC `
+          --quiet --norestart --wait
 
+      # vcpkg handles the modern HTTPS/JSON libraries for us
       - name: Install Dependencies via vcpkg
         run: |
           vcpkg integrate install
           vcpkg install curl:x86-windows nlohmann-json:x86-windows
 
       - name: Build Solution
+        # /p:PlatformToolset=v142 ensures we use the VS 2019 compiler compatibility
         run: |
-          msbuild VATCANSitu.sln /p:Configuration=Release /p:Platform=x86 /p:VcpkgEnableManifest=true
+          msbuild VATCANSitu.sln /p:Configuration=Release /p:Platform=x86 /p:PlatformToolset=v142 /p:VcpkgEnableManifest=true
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
