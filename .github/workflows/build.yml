@@ -24,13 +24,15 @@ jobs:
         shell: pwsh
         run: |
           $installer = "C:\Program Files (x86)\Microsoft Visual Studio\Installer\vs_installer.exe"
+          # We add the specific v142 (VS 2019) version of MFC and ATL
           $process = Start-Process $installer -ArgumentList 'modify', 
             '--installPath "C:\Program Files\Microsoft Visual Studio\2022\Enterprise"', 
             '--add Microsoft.VisualStudio.Component.VC.v142.x86.x64', 
-            '--add Microsoft.VisualStudio.Component.VC.ATLMFC', 
+            '--add Microsoft.VisualStudio.Component.VC.ATLMFC',
+            '--add Microsoft.VisualStudio.Component.VC.v142.ATL',
+            '--add Microsoft.VisualStudio.Component.VC.v142.MFC',
             '--quiet', '--norestart' -Wait -PassThru
           
-          # Force a 2-minute wait to allow background configuration to finish
           Write-Host "Waiting for installer cleanup..."
           Start-Sleep -Seconds 120
 
@@ -40,7 +42,6 @@ jobs:
           vcpkg install --triplet x86-windows
 
       - name: Build Solution
-        # /p:PlatformToolset=v142 ensures we use the VS 2019 compiler compatibility
         run: |
           msbuild VATCANSitu.sln /p:Configuration=Release /p:Platform=x86 /p:PlatformToolset=v142 /p:VcpkgEnableManifest=true
 
