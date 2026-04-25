@@ -24,17 +24,15 @@ jobs:
         shell: pwsh
         run: |
           $installer = "C:\Program Files (x86)\Microsoft Visual Studio\Installer\vs_installer.exe"
-          # We add the specific v142 (VS 2019) version of MFC and ATL
           $process = Start-Process $installer -ArgumentList 'modify', 
             '--installPath "C:\Program Files\Microsoft Visual Studio\2022\Enterprise"', 
             '--add Microsoft.VisualStudio.Component.VC.v142.x86.x64', 
-            '--add Microsoft.VisualStudio.Component.VC.ATLMFC',
-            '--add Microsoft.VisualStudio.Component.VC.v142.ATL',
             '--add Microsoft.VisualStudio.Component.VC.v142.MFC',
+            '--add Microsoft.VisualStudio.Component.VC.v142.ATL',
             '--quiet', '--norestart' -Wait -PassThru
           
           Write-Host "Waiting for installer cleanup..."
-          Start-Sleep -Seconds 120
+          Start-Sleep -Seconds 60
 
       - name: Install Dependencies via vcpkg
         run: |
@@ -43,7 +41,7 @@ jobs:
 
       - name: Build Solution
         run: |
-          msbuild VATCANSitu.sln /p:Configuration=Release /p:Platform=x86 /p:PlatformToolset=v142 /p:VcpkgEnableManifest=true
+          msbuild VATCANSitu.sln /p:Configuration=Release /p:Platform=Win32 /p:PlatformToolset=v142 /p:VcpkgEnableManifest=true
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
