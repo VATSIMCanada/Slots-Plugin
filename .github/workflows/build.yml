@@ -15,12 +15,11 @@ jobs:
       - name: Setup MSBuild
         uses: microsoft/setup-msbuild@v2
 
-      - name: Install MFC Component
-        shell: pwsh
-        run: |
-          Start-Process "C:\Program Files (x86)\Microsoft Visual Studio\Installer\vs_installer.exe" `
-          -ArgumentList "modify --installPath ""C:\Program Files\Microsoft Visual Studio\2022\Enterprise"" --add Microsoft.VisualStudio.Component.VC.ATLMFC --quiet --norestart" `
-          -Wait
+      - name: Install MFC
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x86
+          toolset: 14.2
 
       - name: Install Dependencies via vcpkg
         # This step uses the vcpkg.json file created above
