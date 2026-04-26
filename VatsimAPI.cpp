@@ -6,6 +6,7 @@
 #include "curl/curl.h"
 
 using json = nlohmann::json;
+
 string CDataHandler::url1;
 int CDataHandler::refreshInterval;
 string CDataHandler::tagLabel;
@@ -19,15 +20,23 @@ static size_t write_data(void* buffer, size_t size, size_t nmemb, void* userp) {
     return size * nmemb;
 }
 
-// Helper to setup standard modern CURL options
 void setup_curl_modern(CURL* h, const char* url, string* response) {
     curl_easy_setopt(h, CURLOPT_URL, url);
     curl_easy_setopt(h, CURLOPT_WRITEFUNCTION, write_data);
     curl_easy_setopt(h, CURLOPT_WRITEDATA, response);
-    curl_easy_setopt(h, CURLOPT_FOLLOWLOCATION, 1L); // Follow redirects from Nginx
-    curl_easy_setopt(h, CURLOPT_SSL_VERIFYPEER, 1L); // Modern SSL security
+    curl_easy_setopt(h, CURLOPT_FOLLOWLOCATION, 1L);
+
+    // --- STATIC NATIVE WINDOWS SSL ---
+    // No cert file needed because it's baked into your DLL 
+    // and using the Windows OS trust store
+    curl_easy_setopt(h, CURLOPT_SSL_OPTIONS, CURLSSLOPT_NATIVE_CA);
+    curl_easy_setopt(h, CURLOPT_SSL_OPTIONS, CURLSSLOPT_NO_REVOKE);
+
+    curl_easy_setopt(h, CURLOPT_SSL_VERIFYPEER, 1L);
     curl_easy_setopt(h, CURLOPT_SSL_VERIFYHOST, 2L);
-    curl_easy_setopt(h, CURLOPT_TIMEOUT, 10L);       // Don't hang the plugin
+    // ---------------------------------
+
+    curl_easy_setopt(h, CURLOPT_TIMEOUT, 10L);
 }
 
 void CDataHandler::GetVatsimAPIurlData() {
@@ -55,7 +64,7 @@ void CDataHandler::GetVatsimAPIData(void* args) {
     string cidString;
     json cidJson;
     CDataHandler::timeSlotUpdate = clock();
-    
+
     // --- PART 1: Fetch VATCAN Slots ---
     if (((CDataHandler::timeSlotUpdate - CDataHandler::oldTime) / CLOCKS_PER_SEC > 300) || CDataHandler::firstSlotPull) {
         CURL* curl = curl_easy_init();
@@ -71,13 +80,16 @@ void CDataHandler::GetVatsimAPIData(void* args) {
                         string error = cidJson.at("error");
                         data->Plugin->DisplayUserMessage("VATCAN Slot Manager", "API Error", error.c_str(), true, true, true, true, true);
                         CSiTRadar::amendStatus = 2;
-                    } else {
+                    }
+                    else {
                         data->Plugin->DisplayUserMessage("VATCAN Slot Manager", "Update Successful", "Slot times parsed", true, false, false, false, false);
                     }
-                } catch (exception& e) {
+                }
+                catch (exception& e) {
                     data->Plugin->DisplayUserMessage("VATCAN Slot Manager", "Parse Error", (string("Slots failed: ") + e.what()).c_str(), true, true, true, true, true);
                 }
-            } else {
+            }
+            else {
                 string errStr = curl_easy_strerror(res);
                 data->Plugin->DisplayUserMessage("VATCAN Slot Manager", "Network Error", (string("Connect failed: ") + errStr).c_str(), true, true, true, true, true);
             }
@@ -112,7 +124,8 @@ void CDataHandler::GetVatsimAPIData(void* args) {
                         if (CSiTRadar::slotTime.count(apiCID)) {
                             CSiTRadar::mAcData[apiCallsign].slotTime = CSiTRadar::slotTime[apiCID];
                             CSiTRadar::mAcData[apiCallsign].hasCTP = TRUE;
-                        } else {
+                        }
+                        else {
                             CSiTRadar::mAcData[apiCallsign].slotTime = "";
                             CSiTRadar::mAcData[apiCallsign].hasCTP = FALSE;
                         }
@@ -120,7 +133,8 @@ void CDataHandler::GetVatsimAPIData(void* args) {
                 }
                 string timeStamp = jsonArray["general"]["update_timestamp"];
                 data->Plugin->DisplayUserMessage("VATCAN Slot Manager", "Update Successful", (string("CIDs fetched at ") + timeStamp).c_str(), true, false, false, false, false);
-            } catch (exception& e) {
+            }
+            catch (exception& e) {
                 data->Plugin->DisplayUserMessage("VATCAN Slot Manager", "Parse Error", (string("VATSIM Data failed: ") + e.what()).c_str(), true, true, true, true, true);
             }
         }
@@ -149,7 +163,8 @@ void CDataHandler::GetVatsimAPIData(void* args) {
                     }
                 }
                 data->Plugin->DisplayUserMessage("VATCAN Slot Manager", "Update Successful", "NAT Track Updated", true, false, false, false, false);
-            } catch (...) {}
+            }
+            catch (...) {}
         }
         curl_easy_cleanup(curlNATTrack);
     }
@@ -161,55 +176,55 @@ void CDataHandler::GetVatsimAPIData(void* args) {
 
 void CDataHandler::AmendFlightPlans(void* args) {
 
-	CAsync* data = (CAsync*)args;
-	string oldRemarks;
-	string newRemarks;
-	int countFP = 0;
+    CAsync* data = (CAsync*)args;
+    string oldRemarks;
+    string newRemarks;
+    int countFP = 0;
 
-	struct tm gmt;
-	time_t t = time(0);
-	gmtime_s(&gmt, &t);
+    struct tm gmt;
+    time_t t = time(0);
+    gmtime_s(&gmt, &t);
 
-	char timeStr[50];
-	strftime(timeStr, 50, "%H%MZ", &gmt);
+    char timeStr[50];
+    strftime(timeStr, 50, "%H%MZ", &gmt);
 
-	for (CFlightPlan flightPlan = data->Plugin->FlightPlanSelectFirst(); flightPlan.IsValid();
-		flightPlan = data->Plugin->FlightPlanSelectNext(flightPlan)) {
-		oldRemarks = flightPlan.GetFlightPlanData().GetRemarks();
+    for (CFlightPlan flightPlan = data->Plugin->FlightPlanSelectFirst(); flightPlan.IsValid();
+        flightPlan = data->Plugin->FlightPlanSelectNext(flightPlan)) {
+        oldRemarks = flightPlan.GetFlightPlanData().GetRemarks();
 
-		// if the callsign has not been correlated with a CID, don't try to amend the Flightplan yet, needs update from vatsim status
-		if (CSiTRadar::mAcData[flightPlan.GetCallsign()].CID == "") { continue; }
+        // if the callsign has not been correlated with a CID, don't try to amend the Flightplan yet, needs update from vatsim status
+        if (CSiTRadar::mAcData[flightPlan.GetCallsign()].CID == "") { continue; }
 
-		if (flightPlan.GetFlightPlanData().IsReceived()) {
+        if (flightPlan.GetFlightPlanData().IsReceived()) {
 
-			if (CSiTRadar::mAcData[flightPlan.GetCallsign()].hasCTP == TRUE) {
-				oldRemarks = flightPlan.GetFlightPlanData().GetRemarks();
+            if (CSiTRadar::mAcData[flightPlan.GetCallsign()].hasCTP == TRUE) {
+                oldRemarks = flightPlan.GetFlightPlanData().GetRemarks();
 
-				if (oldRemarks.find("CTP SLOT") == string::npos) {
+                if (oldRemarks.find("CTP SLOT") == string::npos) {
 
-					newRemarks = (string)"CTP SLOT / " + timeStr + " " + oldRemarks;
-					flightPlan.GetFlightPlanData().SetRemarks(newRemarks.c_str());
-				}
-			}
-			// If someone adds CTP SLOT to their remarks, but isn't on the list, then flag this in the remarks
-			else {
-				if (oldRemarks.find("CTP SLOT") != string::npos && oldRemarks.find("CTP MISMATCH") == string::npos) {
-					newRemarks = (string)"CTP MISMATCH / NON EVENT / " + timeStr + " " + oldRemarks;
+                    newRemarks = (string)"CTP SLOT / " + timeStr + " " + oldRemarks;
+                    flightPlan.GetFlightPlanData().SetRemarks(newRemarks.c_str());
+                }
+            }
+            // If someone adds CTP SLOT to their remarks, but isn't on the list, then flag this in the remarks
+            else {
+                if (oldRemarks.find("CTP SLOT") != string::npos && oldRemarks.find("CTP MISMATCH") == string::npos) {
+                    newRemarks = (string)"CTP MISMATCH / NON EVENT / " + timeStr + " " + oldRemarks;
 
-					flightPlan.GetFlightPlanData().SetRemarks(newRemarks.c_str());
-				}
+                    flightPlan.GetFlightPlanData().SetRemarks(newRemarks.c_str());
+                }
 
-				else if (oldRemarks.find("NON EVENT") == string::npos) {
-					newRemarks = (string)"NON EVENT / " + timeStr + " " + oldRemarks;
+                else if (oldRemarks.find("NON EVENT") == string::npos) {
+                    newRemarks = (string)"NON EVENT / " + timeStr + " " + oldRemarks;
 
-					flightPlan.GetFlightPlanData().SetRemarks(newRemarks.c_str());
-				}
-			}
-			flightPlan.GetFlightPlanData().AmendFlightPlan();
-		}
-		countFP++;
-	}
-	data->Plugin->DisplayUserMessage("Slot Helper", "Success", (to_string(countFP) + (string)" Flight Plans Updated").c_str(), true, false, false, false, false);
+                    flightPlan.GetFlightPlanData().SetRemarks(newRemarks.c_str());
+                }
+            }
+            flightPlan.GetFlightPlanData().AmendFlightPlan();
+        }
+        countFP++;
+    }
+    data->Plugin->DisplayUserMessage("Slot Helper", "Success", (to_string(countFP) + (string)" Flight Plans Updated").c_str(), true, false, false, false, false);
 
-	delete args;
+    delete args;
 }
